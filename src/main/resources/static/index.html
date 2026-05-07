@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Map</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top, #1e293b, #020617);
+            color: white;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #cbd5e1;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            padding: 12px;
+            width: 250px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 10px;
+            background: #3b82f6;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        #status {
+            margin-bottom: 25px;
+            color: #e2e8f0;
+        }
+
+        .stars-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .star-card {
+            background: rgba(30, 41, 59, 0.85);
+            border-radius: 18px;
+            padding: 20px;
+            text-align: left;
+            transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+        }
+
+        .star-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .star-name {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #f8fafc;
+        }
+
+        .star-info {
+            color: #cbd5e1;
+            line-height: 1.7;
+        }
+
+        .loading {
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            input {
+                width: 100%;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+        }
+        footer {
+    margin-top: 50px;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    text-align: center;
+
+}
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🌌 Sky Map</h1>
+
+    <p class="subtitle">
+        Explore bright stars visible from different locations on Earth
+    </p>
+
+    <p id="status">Detecting your location...</p>
+
+    <div class="search-box">
+        <input type="number" id="manualLat"
+               placeholder="Try another latitude (-90 to 90)">
+
+        <button onclick="searchManualLatitude()">
+            Explore
+        </button>
+    </div>
+
+    <div id="result" class="stars-grid"></div>
+
+</div>
+<footer>
+    Built with Java + Spring Boot by Bhavani
+</footer>
+<script>
+
+window.onload = function () {
+    loadStars();
+};
+
+function loadStars() {
+
+    const status = document.getElementById("status");
+
+    if (!navigator.geolocation) {
+        status.innerText = "Geolocation not supported";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+
+        const lat = position.coords.latitude;
+
+        status.innerText =
+            `📍 Your Current Latitude: ${lat.toFixed(2)}`;
+
+        fetchStars(lat);
+
+    }, () => {
+        status.innerText = "Location access denied";
+    });
+}
+
+function fetchStars(lat) {
+
+    const result = document.getElementById("result");
+
+    result.innerHTML =
+        `<p class="loading">Loading stars...</p>`;
+
+    fetch(`/stars?lat=${lat}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("status").innerText =
+    `🌍 Exploring Latitude: ${lat} | Top ${data.length} stars found`;
+            result.innerHTML = "";
+
+            if (data.length === 0) {
+                result.innerHTML = `
+                    <p class="loading">No stars found</p>
+                `;
+                return;
+            }
+
+            data.forEach(star => {
+
+                const card = document.createElement("div");
+
+                card.className = "star-card";
+
+                card.innerHTML = `
+                    <div class="star-name">
+                        ⭐ ${star.name}
+                    </div>
+
+                    <div class="star-info">
+                        <b>Magnitude:</b> ${star.mag}<br>
+                        <b>Declination:</b> ${star.dec}<br>
+                        <b>Right Ascension:</b> ${star.ra}
+                    </div>
+                `;
+
+                result.appendChild(card);
+            });
+        });
+}
+
+function searchManualLatitude() {
+
+    const lat = document.getElementById("manualLat").value;
+
+    if (!lat) {
+        alert("Enter latitude");
+        return;
+    }
+
+    document.getElementById("status").innerText =
+        `🌍 Exploring Latitude: ${lat}`;
+
+    fetchStars(lat);
+}
+
+</script>
+
+</body>
+</html>
